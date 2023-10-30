@@ -1,52 +1,98 @@
 
 function serialize(obj) {
-    if (typeof obj === "object" && obj !== null) {
-        let serializeObj = "";
+    const visited = new WeakSet();
 
-        if (Array.isArray(obj)) {
-            serializeObj += "[";
+    return serializeProcess(obj);
 
-            for (let i in obj) {
-                serializeObj += serialize(obj[i]);
 
-                if (i < obj.length - 1) {
-                    serializeObj += ","
-                }
-            }
 
-            serializeObj += "]";
-        } else {
-            serializeObj += "{";
-
-            for (const key in obj) {
-                serializeObj += "\"" + key + "\"" + ":" + serialize(obj[key]) + ",";
-            }
-
-            serializeObj = serializeObj.slice(0, -1);
-            serializeObj += "}";
+    function serializeProcess(obj){
+        if (visited.has(obj)) {
+            console.log("Обнаружен цыкл")
+            return;
         }
+        if (typeof obj === "object")
+            visited.add(obj);
 
-        return serializeObj;
+        if (typeof obj !== undefined && obj !== null) {
+            switch (typeof obj) {
+                case "string": 
+                    return serSring(obj);
+                case "object":
+                    return serObject(obj);
+                default:
+                    return String(obj);
+            }
+        }
     }
 
-    if (typeof obj === "string") {
+    function serSring(obj) {
         return "\"" + obj + "\"";
     }
-
-    return String(obj);
+    
+    function serObject(obj) {
+        if (Array.isArray(obj)) {
+            return serObjectArray(obj);
+        } else if (obj instanceof Date) {
+            return serObjectDate(obj);
+        } else {
+            return serObjectLiteral(obj);
+        }
+    }
+    
+    function serObjectDate(obj) {
+        obj = "\"" + obj.getFullYear() + '-' + ("0"+(obj.getMonth()+1)).slice(-2) + '-' + ("0"+(obj.getDate())).slice(-2) +
+        "T" + ("0" + (obj.getHours()-3)).slice(-2) + ":" + ("0" + obj.getMinutes()).slice(-2) + ":" + 
+        ("0" + obj.getSeconds()).slice(-2) + "." + ("0" + obj.getMilliseconds()).slice(-3) + "Z\"";
+        return obj.toString();
+    }
+    
+    function serObjectArray(obj) {
+        let serializeObj = "[";
+    
+        for (let i in obj) {
+            serializeObj += serialize(obj[i]);
+            if (i < obj.length - 1) {
+                serializeObj += ","
+            }
+        }
+    
+        serializeObj += "]";
+        return serializeObj;
+    }
+    
+    function serObjectLiteral(obj) {
+        let serializeObj = "{";
+    
+        for (const key in obj) {
+                serializeObj += "\"" + key + "\"" + ":" + serializeProcess(obj[key]) + ",";
+        }
+    
+        serializeObj = serializeObj.slice(0, -1);
+        serializeObj += "}";
+        return serializeObj;
+    }
 }
 
-const obj1 = {name: "gfgv", age: 25};
-const obj2 = ["dsd", 555, "wqwq"];
-const obj3 = "dsdddddd";
-const obj4 = 2343;
-const obj5 = 3.1212;
-const obj6 = Date;
 //проверка на цикл
 //претиэр
 
-console.log(serialize(obj1), JSON.stringify(obj1));
-console.log(serialize(obj2), JSON.stringify(obj2));
-console.log(serialize(obj3), JSON.stringify(obj3));
-console.log(serialize(obj4), JSON.stringify(obj4));
-console.log(serialize(obj5), JSON.stringify(obj5));
+objects = {
+    string: "Юки",
+    number: 25,
+    float: 2.3333,
+    array: ["плавание", "горные лыжи"],
+    literal: {
+      city: "Москва",
+      country: "Россия",
+    },
+    date: new Date,
+    bool: true,
+    circular: null,
+}
+
+objects.circular = objects;
+
+for (const key in objects) {
+    console.log(serialize(objects[key]) === JSON.stringify(objects[key]) ? true: serialize(objects[key])+" ||| "+JSON.stringify(objects[key]));
+}
