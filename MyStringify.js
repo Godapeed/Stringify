@@ -1,5 +1,4 @@
 
-<<<<<<< HEAD
 function serialize(obj) {
     const visited = new WeakSet();
 
@@ -73,7 +72,7 @@ function serialize(obj) {
         serializeObj += "}";
         return serializeObj;
     }
-=======
+
 function serSring(obj) {
     return "\"" + obj + "\"";
 }
@@ -132,7 +131,6 @@ function serialize(obj) {
                 return String(obj);
         }
     }  
->>>>>>> dda474629b3a390e5f973e43834154f721d3fd09
 }
 
 //проверка на цикл
@@ -148,7 +146,7 @@ objects = {
       country: "Россия",
     },
     date: new Date,
-<<<<<<< HEAD
+
     bool: true,
     circular: null,
 }
@@ -158,10 +156,4 @@ objects.circular = objects;
 for (const key in objects) {
     console.log(serialize(objects[key]) === JSON.stringify(objects[key]) ? true: serialize(objects[key])+" ||| "+JSON.stringify(objects[key]));
 }
-=======
-}
 
-for (const key in objects) {
-    console.log(serialize(objects[key]) === JSON.stringify(objects[key]) ? true: serialize(objects[key])+" ||| "+JSON.stringify(objects[key]));
-}
->>>>>>> dda474629b3a390e5f973e43834154f721d3fd09
