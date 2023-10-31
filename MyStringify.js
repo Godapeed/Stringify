@@ -1,4 +1,3 @@
-
 function serialize(obj) {
     const visited = new WeakSet();
 
