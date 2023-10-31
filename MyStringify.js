@@ -150,6 +150,7 @@ objects = {
     bool: true,
     circular: null,
 }
+}
 
 objects.circular = objects;
 
