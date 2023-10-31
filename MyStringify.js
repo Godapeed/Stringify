@@ -91,6 +91,7 @@ objects = {
     circular: null,
 }
 
+
 objects.circular = objects;
 
 for (const key in objects) {
