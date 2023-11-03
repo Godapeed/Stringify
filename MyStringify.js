@@ -1,79 +1,80 @@
-function serialize(obj) {
+function serialize(value, replacer) {
     const visited = new WeakSet();
 
-    return serializeProcess(obj);
+    return serializeProcess(value, visited, replacer);
+}
 
-
-
-    function serializeProcess(obj){
-        if (visited.has(obj)) {
-            console.log("Обнаружен цыкл")
-            return;
-        }
-        if (typeof obj === "object")
-            visited.add(obj);
-
-        if (typeof obj !== undefined && obj !== null) {
-            switch (typeof obj) {
-                case "string": 
-                    return serSring(obj);
-                case "object":
-                    return serObject(obj);
-                default:
-                    return String(obj);
-            }
-        }
-    }
-
-    function serSring(obj) {
-        return "\"" + obj + "\"";
-    }
-    
-    function serObject(obj) {
-        if (Array.isArray(obj)) {
-            return serObjectArray(obj);
-        } else if (obj instanceof Date) {
-            return serObjectDate(obj);
+function serializeProcess(value, visited, replacer){
+    if (visited.has(value)) {
+        if (replacer === undefined) {
+            throw new TypeError("Встречен цикл");
         } else {
-            return serObjectLiteral(obj);
+            replacer();
         }
     }
-    
-    function serObjectDate(obj) {
-        obj = "\"" + obj.getFullYear() + '-' + ("0"+(obj.getMonth()+1)).slice(-2) + '-' + ("0"+(obj.getDate())).slice(-2) +
-        "T" + ("0" + (obj.getHours()-3)).slice(-2) + ":" + ("0" + obj.getMinutes()).slice(-2) + ":" + 
-        ("0" + obj.getSeconds()).slice(-2) + "." + ("0" + obj.getMilliseconds()).slice(-3) + "Z\"";
-        return obj.toString();
+    if (typeof value === "object") {
+        visited.add(value);
     }
-    
-    function serObjectArray(obj) {
-        let serializeObj = "[";
-    
-        for (let i in obj) {
-            serializeObj += serialize(obj[i]);
-            if (i < obj.length - 1) {
-                serializeObj += ","
-            }
+
+    if (typeof value !== undefined && value !== null) {
+        switch (typeof value) {
+            case "string":
+                return serSring(value);
+            case "object":
+                return serObject(value, visited, replacer);
+            default:
+                return String(value);
         }
-    
-        serializeObj += "]";
-        return serializeObj;
-    }
-    
-    function serObjectLiteral(obj) {
-        let serializeObj = "{";
-    
-        for (const key in obj) {
-                serializeObj += "\"" + key + "\"" + ":" + serializeProcess(obj[key]) + ",";
-        }
-    
-        serializeObj = serializeObj.slice(0, -1);
-        serializeObj += "}";
-        return serializeObj;
     }
 }
 
-//проверка на цикл
+function serSring(value) {
+    return "\"" + value + "\"";
+}
+
+function serObject(value, visited, replacer) {
+    if (Array.isArray(value)) {
+        return serObjectArray(value);
+    } else if (value instanceof Date) {
+        return serObjectDate(value);
+    } else {
+        return serObjectLiteral(value, visited, replacer);
+    }
+}
+
+function serObjectDate(value) {
+    value = "\"" + value.getFullYear() + '-' + ("0"+(value.getMonth()+1)).slice(-2) + '-' + ("0"+(value.getDate())).slice(-2) +
+    "T" + ("0" + (value.getHours()-3)).slice(-2) + ":" + ("0" + value.getMinutes()).slice(-2) + ":" + 
+    ("0" + value.getSeconds()).slice(-2) + "." + ("0" + value.getMilliseconds()).slice(-3) + "Z\"";
+    return value.toString();
+}
+
+function serObjectArray(value) {
+    let serializeObj = "[";
+
+    for (let i in value) {
+        serializeObj += serialize(value[i]);
+        if (i < value.length - 1) {
+            serializeObj += ",";
+        }
+    }
+
+    serializeObj += "]";
+    return serializeObj;
+}
+
+function serObjectLiteral(value, visited, replacer) {
+    let serializeObj = "{";
+
+    for (const key in value) {
+        serializeObj += "\"" + key + "\"" + ":" + serializeProcess(value[key], visited, replacer) + ",";
+    }
+
+    serializeObj = serializeObj.slice(0, -1);
+    serializeObj += "}";
+    return serializeObj;
+}
+
 //претиэр
 
 objects = {
@@ -90,9 +91,25 @@ objects = {
     circular: null,
 }
 
+const getCircularReplacer = () => {
+    const seen = new WeakSet();
+    return (key, value) => {
+        if (typeof value === "object" && value !== null) {
+            if (seen.has(value)) {
+            return "Обнаружен цикл";
+            }
+            seen.add(value);
+        }
+        return value;
+    };
+};
 
 objects.circular = objects;
 
 for (const key in objects) {
-    console.log(serialize(objects[key]) === JSON.stringify(objects[key]) ? true: serialize(objects[key])+" ||| "+JSON.stringify(objects[key]));
+    mySerialize = serialize(objects[key], getCircularReplacer());
+    jsonSerialize = JSON.stringify(objects[key], getCircularReplacer());
+    
+    console.log(mySerialize === jsonSerialize ? true: mySerialize + " ||| " + jsonSerialize);
 }
+
