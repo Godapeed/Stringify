@@ -1,8 +1,16 @@
-function serialize(value, replacer) {
+function serialize(value, replacer, space) {
   const visited = new WeakSet();
 
+  if (typeof space === "number") {
+    space = " ".repeat(space);
+  } else if (space === "\t") {
+    space = "\t";
+  } else if (typeof space !== "string") {
+    space = undefined;
+  }
+
   try {
-    return serializeProcess(value, visited, replacer);
+    return serializeProcess(value, visited, replacer, space, 1);
   } catch (error) {
     if (error instanceof TypeError) {
       console.log(
@@ -18,7 +26,7 @@ function serialize(value, replacer) {
   }
 }
 
-function serializeProcess(value, visited, replacer) {
+function serializeProcess(value, visited, replacer, space, space_level) {
   if (typeof replacer === "function") {
     value = replacer("", value);
   } else if (visited.has(value)) {
@@ -33,7 +41,7 @@ function serializeProcess(value, visited, replacer) {
       case "string":
         return serSring(value);
       case "object":
-        return serObject(value, visited, replacer);
+        return serObject(value, visited, replacer, space, space_level);
       case "string":
         return String(value);
       case "number":
@@ -52,13 +60,13 @@ function serSring(value) {
   return '"' + value + '"';
 }
 
-function serObject(value, visited, replacer) {
+function serObject(value, visited, replacer, space, space_level) {
   if (Array.isArray(value)) {
-    return serObjectArray(value);
+    return serObjectArray(value, space, space_level);
   } else if (value instanceof Date) {
     return serObjectDate(value);
   } else {
-    return serObjectLiteral(value, visited, replacer);
+    return serObjectLiteral(value, visited, replacer, space, space_level);
   }
 }
 
@@ -82,35 +90,74 @@ function serObjectDate(value) {
   return value.toString();
 }
 
-function serObjectArray(value) {
-  let serializeObj = "[";
+function serObjectArray(value, space, space_level) {
+  let serializeObj = "";
+
+  local_space = space.repeat(space_level);
+  serializeObj += "[";
+
+  if (space !== undefined) {
+    serializeObj += "\n";
+  }
 
   for (let i in value) {
+    if (space !== undefined) {
+      serializeObj += local_space;
+    }
+
     serializeObj += serialize(value[i]);
+
     if (i < value.length - 1) {
       serializeObj += ",";
+      if (space !== undefined) {
+        serializeObj += "\n";
+      }
     }
   }
 
-  serializeObj += "]";
+  if (space !== undefined) {
+    serializeObj += "\n";
+  }
+
+  serializeObj += local_space.slice(0, -space.length) + "]";
   return serializeObj;
 }
 
-function serObjectLiteral(value, visited, replacer) {
-  let serializeObj = "{";
+function serObjectLiteral(value, visited, replacer, space, space_level) {
+  let serializeObj = "";
+
+  local_space = space.repeat(space_level);
+  serializeObj += "{";
+
+  if (space !== undefined) {
+    serializeObj += "\n";
+  }
 
   for (const key in value) {
+    if (space !== undefined) {
+      serializeObj += local_space;
+    }
     serializeObj +=
       '"' +
       key +
       '"' +
-      ":" +
-      serializeProcess(value[key], visited, replacer) +
+      ": " +
+      serializeProcess(value[key], visited, replacer, space, space_level + 1) +
       ",";
+    if (space !== undefined) {
+      serializeObj += "\n";
+    }
   }
 
   serializeObj = serializeObj.slice(0, -1);
-  serializeObj += "}";
+
+  if (space !== undefined) {
+    serializeObj = serializeObj.slice(0, -1);
+    serializeObj += "\n";
+  }
+
+  local_space = local_space.slice(0, -space.length);
+  serializeObj += local_space + "}";
   return serializeObj;
 }
 
@@ -145,12 +192,10 @@ const getCircularReplacer = () => {
 objects.circular = objects;
 
 for (const key in objects) {
-  jsonSerialize = JSON.stringify(objects[key], getCircularReplacer());
-  mySerialize = serialize(objects[key], getCircularReplacer());
+  jsonSerialize = JSON.stringify(objects[key], getCircularReplacer(), "\t");
+  mySerialize = serialize(objects[key], getCircularReplacer(), "\t");
 
   console.log(
     mySerialize === jsonSerialize ? true : mySerialize + " ||| " + jsonSerialize
   );
 }
-
-
