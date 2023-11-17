@@ -113,7 +113,7 @@ function serObjectDate(value) {
  * @param {*} value Сущность который надо сериализовать.
  * @param {*} space Форматирование сериализации.
  * @param {*} space_level Уровень вложенности в сложных сущностях.
- * @returns 
+ * @returns Серриализованный массив.
  */
 function serObjectArray(value, space, space_level) {
   let serializeObj = "";
@@ -128,7 +128,7 @@ function serObjectArray(value, space, space_level) {
   }
 
   for (let i in value) {
-    if (typeof value[i] === "symbol") { //Если в массиве встретился символ, присвоим ему нуль
+    if (typeof value[i] === "symbol") { //Если в массиве встретился символ, превратим его в нуль
       serializeObj += null + ",";
       continue;
     }
@@ -207,49 +207,4 @@ function serObjectLiteral(value, visited, replacer, space, space_level) {
   return serializeObj;
 }
 
-
-
-objects = {
-  string: "Юки",
-  number: 25,
-  float: 2.3333,
-  array: ["плавание", "горные лыжи"],
-  literal: {
-    city: "Москва",
-    country: "Россия",
-  },
-  date: new Date(2020, 6, 6),
-  bool: true,
-  symbol: Symbol("id"),
-  circular: null,
-};
-
-const getCircularReplacer = () => {
-  const seen = new WeakSet();
-  return (key, value) => {
-    if (typeof value === "object" && value !== null) {
-      if (seen.has(value)) {
-        return "Обнаружен цикл";
-      }
-      seen.add(value);
-    }
-    return value;
-  };
-};
-
-objects.circular = objects;
-
-for (const key in objects) {
-  jsonSerialize = JSON.stringify(objects[key], getCircularReplacer(), 1);
-  mySerialize = serialize(objects[key], getCircularReplacer(), 1);
-
-  console.log(
-    mySerialize === jsonSerialize ? true : mySerialize + " ||| " + jsonSerialize
-  );
-}
-
-//npm + pacagjson
-//Markdown
-//moment
-//replacer - не только циклы
-//коменты внутрь
+module.exports = serialize;
