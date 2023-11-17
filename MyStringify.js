@@ -1,208 +1,255 @@
+/**
+ * Сериализация сущности.
+ * @param {*} value Сущность который надо сериализовать.
+ * @param {*} replacer Функция предобрабатывающая сущность перед сериализации.
+ * @param {*} space Форматирование сериализации.
+ * @returns Сериализованная сущность.
+ */
 function serialize(value, replacer, space) {
-    const visited = new WeakSet();
-  
-    if (typeof space === "number") {
-      space = " ".repeat(space);
-    } else if (space === "\t") {
-      space = "\t";
-    } else if (typeof space !== "string") {
-      space = undefined;
+  const visited = new WeakSet();
+
+  if (typeof space === "number") {
+    space = " ".repeat(space);
+  } else if (space === "\t") {
+    space = "\t";
+  } else if (typeof space !== "string") {
+    space = undefined;
+  }
+
+  try {
+    return serializeProcess(value, visited, replacer, space, 1);
+  } catch (error) {
+    if (error instanceof TypeError) {
+      console.log(
+        "Ошибка сериализации: Сериализация данного типа объекта не предусмотренна"
+      );
     }
-  
-    try {
-      return serializeProcess(value, visited, replacer, space, 1);
-    } catch (error) {
-      if (error instanceof TypeError) {
-        console.log(
-          "Ошибка сериализации: Сериализация данного типа объекта не предусмотренна"
-        );
-      }
-      if (error instanceof RangeError) {
-        console.log("Ошибка сериализации: превышено ограничение по глубине");
-      }
-      if (error instanceof SyntaxError) {
-        console.log("Ошибка сериализации: некорректный JSON");
-      }
+    if (error instanceof RangeError) {
+      console.log("Ошибка сериализации: превышено ограничение по глубине");
+    }
+    if (error instanceof SyntaxError) {
+      console.log("Ошибка сериализации: некорректный JSON");
     }
   }
-  
-  //replacer - не только циклы
-  
-  function serializeProcess(value, visited, replacer, space, space_level) {
-    if (typeof replacer === "function") {
-      value = replacer("", value);
-    } 
-    if (visited.has(value)) {
-      throw new SyntaxError("Встречен цикл");
-    }
-    if (typeof value === "object") {
-      visited.add(value);
-    }
-  
-    if (typeof value !== undefined && value !== null) {
-      switch (typeof value) {
-        case "string":
-          return serSring(value);
-        case "object":
-          return serObject(value, visited, replacer, space, space_level);
-        case "string":
-          return String(value);
-        case "number":
-          return String(value);
-        case "boolean":
-          return String(value);
-        case "symbol":
-          return undefined;
-        default:
-          throw new TypeError("Непредусмотренный тип");
-      }
-    }
+}
+
+/**
+ * Процесс сераализации.
+ * @param {*} value Сущность который надо сериализовать.
+ * @param {*} visited Список сериализованных сущностей.
+ * @param {*} replacer Функция предобрабатывающая сущность перед сериализации.
+ * @param {*} space Форматирование сериализации.
+ * @param {*} space_level Уровень вложенности в сложных сущностях.
+ * @returns Сериализованная сущность.
+ */
+function serializeProcess(value, visited, replacer, space, space_level) {
+  if (typeof replacer === "function") {
+    value = replacer("", value);
   }
-  
-  function serSring(value) {
-    return '"' + value + '"';
+  if (visited.has(value)) {
+    throw new SyntaxError("Встречен цикл");
   }
-  
-  function serObject(value, visited, replacer, space, space_level) {
-      //символ в массиве
-    if (Array.isArray(value)) {
-      return serObjectArray(value, space, space_level);
-    } else if (value instanceof Date) {
-      return serObjectDate(value);
-    } else {
-      return serObjectLiteral(value, visited, replacer, space, space_level);
+  if (typeof value === "object") {
+    visited.add(value);
+  }
+
+  if (typeof value !== undefined && value !== null) {
+    switch (typeof value) {
+      case "string":
+        return serSring(value);
+      case "object":
+        return serObject(value, visited, replacer, space, space_level);
+      case "number":
+        return String(value);
+      case "boolean":
+        return String(value);
+      case "symbol":
+        return undefined;
+      default:
+        throw new TypeError("Непредусмотренный тип");
     }
   }
-  
-  function serObjectDate(value) {
-    value =
-      '"' +
-      value.getFullYear() +
-      "-" +
-      ("0" + (value.getMonth() + 1)).slice(-2) +
-      "-" +
-      ("0" + value.getDate()).slice(-2) +
-      "T" +
-      ("0" + (value.getHours() - 3)).slice(-2) +
-      ":" +
-      ("0" + value.getMinutes()).slice(-2) +
-      ":" +
-      ("0" + value.getSeconds()).slice(-2) +
-      "." +
-      ("0" + value.getMilliseconds()).slice(-3) +
-      'Z"';
-    return value.toString();
+}
+
+/**
+ * Сериализация строки.
+ * @param {*} value Сущность который надо сериализовать.
+ * @returns Сериализованная сущность.
+ */
+function serSring(value) {
+  return '"' + value + '"';
+}
+
+/**
+ * Сериализация объекта.
+ * @param {*} value Сущность который надо сериализовать.
+ * @param {*} visited Список сериализованных сущностей.
+ * @param {*} replacer Функция предобрабатывающая сущность перед сериализации.
+ * @param {*} space Форматирование сериализации.
+ * @param {*} space_level Уровень вложенности в сложных сущностях.
+ * @returns Сериализованная сущность.
+ */
+function serObject(value, visited, replacer, space, space_level) {
+  if (Array.isArray(value)) {
+    return serObjectArray(value, space, space_level);
+  } else if (value instanceof Date) {
+    return serObjectDate(value);
+  } else {
+    return serObjectLiteral(value, visited, replacer, space, space_level);
   }
-  
-  function serObjectArray(value, space, space_level) {
-    let serializeObj = "";
-  
+}
+
+/**
+ * Сериализация даты.
+ * @param {*} value Сущность который надо сериализовать.
+ * @returns Сериализованная сущность.
+ */
+function serObjectDate(value) {
+  return "\"" + value.toISOString() + "\"";
+}
+
+/**
+ * Сериализация массива.
+ * @param {*} value Сущность который надо сериализовать.
+ * @param {*} space Форматирование сериализации.
+ * @param {*} space_level Уровень вложенности в сложных сущностях.
+ * @returns 
+ */
+function serObjectArray(value, space, space_level) {
+  let serializeObj = "";
+
+  if (space !== undefined) {
     local_space = space.repeat(space_level);
-    serializeObj += "[";
-  
-    if (space !== undefined) {
-      serializeObj += "\n";
-    }
-  
-    for (let i in value) {
-      if (space !== undefined) {
-        serializeObj += local_space;
-      }
-  
-      serializeObj += serialize(value[i]);
-  
-      if (i < value.length - 1) {
-        serializeObj += ",";
-        if (space !== undefined) {
-          serializeObj += "\n";
-        }
-      }
-    }
-  
-    if (space !== undefined) {
-      serializeObj += "\n";
-    }
-  
-    serializeObj += local_space.slice(0, -space.length) + "]";
-    return serializeObj;
   }
-  
-  function serObjectLiteral(value, visited, replacer, space, space_level) {
-    let serializeObj = "";
-  
-    local_space = space.repeat(space_level);
-    serializeObj += "{";
-  
-    if (space !== undefined) {
-      serializeObj += "\n";
+  serializeObj += "[";
+
+  if (space !== undefined) {
+    serializeObj += "\n";
+  }
+
+  for (let i in value) {
+    if (typeof value[i] === "symbol") { //Если в массиве встретился символ, присвоим ему нуль
+      serializeObj += null + ",";
+      continue;
     }
-  
-    for (const key in value) {
-      if (space !== undefined) {
-        serializeObj += local_space;
-      }
-      serializeObj +=
-        '"' +
-        key +
-        '"' +
-        ": " +
-        serializeProcess(value[key], visited, replacer, space, space_level + 1) + //проверка на символ
-        ",";
+    if (space !== undefined) {
+      serializeObj += local_space;
+    }
+
+    serializeObj += serialize(value[i]);
+
+    if (i < value.length - 1) {
+      serializeObj += ",";
       if (space !== undefined) {
         serializeObj += "\n";
       }
     }
-  
-    serializeObj = serializeObj.slice(0, -1);
-  
+  }
+
+  if (space !== undefined) {
+    local_space = local_space.slice(0, -space.length);
+    serializeObj += "\n" + local_space;
+  }
+
+  serializeObj += "]";
+  return serializeObj;
+}
+
+/**
+ * Сериализация literal block.
+ * @param {*} value Сущность который надо сериализовать.
+ * @param {*} visited Список сериализованных сущностей.
+ * @param {*} replacer Функция предобрабатывающая сущность перед сериализации.
+ * @param {*} space Форматирование сериализации.
+ * @param {*} space_level Уровень вложенности в сложных сущностях.
+ * @returns Сериализованная сущность.
+ */
+function serObjectLiteral(value, visited, replacer, space, space_level) {
+  let serializeObj = "";
+
+  if (space !== undefined) {
+    local_space = space.repeat(space_level);
+  }
+  serializeObj += "{";
+
+  if (space !== undefined) {
+    serializeObj += "\n";
+  }
+
+  for (const key in value) {
+    if (typeof value[key] === "symbol") { //Если в объекте встретился символ то удалим его
+      delete value;
+      continue;
+    }
     if (space !== undefined) {
-      serializeObj = serializeObj.slice(0, -1);
+      serializeObj += local_space;
+    }
+    serializeObj += '"' + key + '"' + ":";
+    if (space !== undefined) {
+      serializeObj += " ";
+    }
+    serializeObj +=
+      serializeProcess(value[key], visited, replacer, space, space_level + 1) + ",";
+    if (space !== undefined) {
       serializeObj += "\n";
     }
-  
-    local_space = local_space.slice(0, -space.length);
-    serializeObj += local_space + "}";
-    return serializeObj;
   }
-  
-  objects = {
-    string: "Юки",
-    number: 25,
-    float: 2.3333,
-    array: ["плавание", "горные лыжи"],
-    literal: {
-      city: "Москва",
-      country: "Россия",
-    },
-    date: new Date(),
-    bool: true,
-    symbol: Symbol("id"),
-    circular: null,
-  };
-  
-  const getCircularReplacer = () => {
-    const seen = new WeakSet();
-    return (key, value) => {
-      if (typeof value === "object" && value !== null) {
-        if (seen.has(value)) {
-          return "Обнаружен цикл";
-        }
-        seen.add(value);
+
+  serializeObj = serializeObj.slice(0, -1);
+
+  if (space !== undefined) {
+    serializeObj = serializeObj.slice(0, -1);
+    local_space = local_space.slice(0, -space.length)
+    serializeObj += "\n" + local_space;
+  }
+
+  serializeObj += "}";
+  return serializeObj;
+}
+
+
+
+objects = {
+  string: "Юки",
+  number: 25,
+  float: 2.3333,
+  array: ["плавание", "горные лыжи"],
+  literal: {
+    city: "Москва",
+    country: "Россия",
+  },
+  date: new Date(2020, 6, 6),
+  bool: true,
+  symbol: Symbol("id"),
+  circular: null,
+};
+
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return "Обнаружен цикл";
       }
-      return value;
-    };
+      seen.add(value);
+    }
+    return value;
   };
-  
-  objects.circular = objects;
-  
-  //даты -> сменить формат
-  //npm + pacagjson
-  
-  for (const key in objects) {
-    jsonSerialize = JSON.stringify(objects[key], getCircularReplacer(), "\t");
-    mySerialize = serialize(objects[key], getCircularReplacer(), "\t");
-  
-    console.log(
-      mySerialize === jsonSerialize ? true : mySerialize + " ||| " + jsonSerialize
-    );
-  }
+};
+
+objects.circular = objects;
+
+for (const key in objects) {
+  jsonSerialize = JSON.stringify(objects[key], getCircularReplacer(), 1);
+  mySerialize = serialize(objects[key], getCircularReplacer(), 1);
+
+  console.log(
+    mySerialize === jsonSerialize ? true : mySerialize + " ||| " + jsonSerialize
+  );
+}
+
+//npm + pacagjson
+//Markdown
+//moment
+//replacer - не только циклы
+//коменты внутрь
