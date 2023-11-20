@@ -2,7 +2,7 @@
   "name": "stringify",
   "version": "1.0.0",
   "description": "",
-  "main": "MyStringify.js",
+  "main": "serialize.js",
   "scripts": {
     "test": "jest"
   },

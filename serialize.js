@@ -178,7 +178,6 @@ function serObjectLiteral(value, visited, replacer, space, space_level) {
 
   for (const key in value) {
     if (typeof value[key] === "symbol") { //Если в объекте встретился символ то удалим его
-      delete value;
       continue;
     }
     if (space !== undefined) {
