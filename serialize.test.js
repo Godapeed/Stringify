@@ -1,5 +1,10 @@
 const serialize = require("./serialize");
 
+o = { a: Symbol("s")};
+test(1, () => {
+  expect(serialize(o)).toBe(JSON.stringify(o));
+});
+
 objects = {
   string: "Юки",
   number: 25,

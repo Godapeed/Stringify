@@ -194,7 +194,9 @@ function serObjectLiteral(value, visited, replacer, space, space_level) {
     }
   }
 
-  serializeObj = serializeObj.slice(0, -1);
+  if (serializeObj[serializeObj.length-1] !== "{") {
+    serializeObj = serializeObj.slice(0, -1);
+  }
 
   if (space !== undefined) {
     serializeObj = serializeObj.slice(0, -1);
